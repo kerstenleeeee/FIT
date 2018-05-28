@@ -35,7 +35,7 @@ def grayscale():
 		os.mkdir("newGray")
 
 	imageList  = []
-	imageDir = "newFlip/"
+	imageDir = "newPre/"
 
 	for filename in os.listdir(imageDir):
 		imageList.append(os.path.join(imageDir, filename))
@@ -114,32 +114,33 @@ def crop():
 	print("DONE")
 
 def preprocess():
-	print("Choose")
-	print("(1) Crop Training Images")
-	print("(2) Resize")
-	print("(3) Augment Images")
-	print("(4) Convert to Grayscale")
-	print("(5) Apply Mean Subtraction")
-	
-	choice = int(input())
+	while(1):
+		print("Choose")
+		print("(1) Crop Training Images")
+		print("(2) Resize")
+		print("(3) Augment Images")
+		print("(4) Convert to Grayscale")
+		print("(5) Apply Mean Subtraction")
+		
+		choice = int(input())
 
-	if choice == 1:
-		print("\nCropping...")
-		crop()
-	elif choice == 2:
-		print("\nResizing...")
-		resize()
-	elif choice == 3:
-		print("\nAugmenting...")
-		augment()
-	elif choice == 4:
-		print("\nConverting...")
-		grayscale()
-	elif choice == 5:
-		print("\nApplying...")
-		meansub()
-	else:
-		print("\nERROR")
+		if choice == 1:
+			print("\nCropping...")
+			crop()
+		elif choice == 2:
+			print("\nResizing...")
+			resize()
+		elif choice == 3:
+			print("\nAugmenting...")
+			augment()
+		elif choice == 4:
+			print("\nConverting...")
+			grayscale()
+		elif choice == 5:
+			print("\nApplying...")
+			meansub()
+		else:
+			break
 
 def featureVector():
 	print("Choose")
@@ -213,9 +214,10 @@ def train():
 	datasetTrain = np.genfromtxt("datasetTrain.csv", delimiter=",")
 	print(datasetTrain.shape)
 
-	linearSVM = LinearSVC(C=0.01, max_iter=10000, loss='hinge', tol=0.00001, intercept_scaling=100)
+	#linearSVM = LinearSVC(C=0.01, max_iter=10000, loss='hinge', tol=0.00001, intercept_scaling=1000)
+	linearSVM = LinearSVC(max_iter=100)
 	linearSVM.fit(datasetTrain, labelsMatrix)
-	filename = "trainModelOK.sav"
+	filename = "trainModel.sav"
 	pickle.dump(linearSVM, open(filename, "wb"))
 
 	print("DONE")
@@ -235,14 +237,38 @@ def test():
 	datasetTrain = np.genfromtxt("datasetTrain.csv", delimiter=",")
 	datasetTest = np.genfromtxt("datasetTest.csv", delimiter=",")
 
-	loadModel = pickle.load(open("trainModelOK.sav", "rb"))
+	loadModel = pickle.load(open("trainModel.sav", "rb"))
 	print(loadModel.score(datasetTrain, labelsMatrixTrain))
 	print(loadModel.score(datasetTest, labelsMatrixTest))
 
 	print("DONE")
 
 def predict():
-	print("HELLO")
+	hgd = cv2.HOGDescriptor()
+
+	loadModel = pickle.load(open("trainModelOK.sav", "rb"))
+
+	featuresVector = []
+	img = cv2.imread("newMean/natasha.jpg")
+	
+	val = hgd.compute(img)
+	featuresVector.append(val)
+	featuresVector = np.asarray(featuresVector)
+	featuresVector = featuresVector.reshape(len(featuresVector), -1)
+
+	print(featuresVector.shape)
+
+	prediction = loadModel.predict(featuresVector)
+
+	#print(int(prediction))
+	if int(prediction) == 1:
+		print("\nFilipino")
+	elif int(prediction) == 2:
+		print("\nThai")
+	elif int(prediction) == 3:
+		print("\nIndonesian")
+
+	#print("DONE")
 
 def main():
 	print("Choose")
@@ -265,8 +291,10 @@ def main():
 		train()
 	elif choice == 4:
 		print("\nObtaining accuracy score...")
+		test()
 	elif choice == 5:
 		print("\nPredicting...")
+		predict()
 	else:
 		print("\nERROR")
 
